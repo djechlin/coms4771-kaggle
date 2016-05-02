@@ -1,13 +1,28 @@
 import csv
 import pandas as pd
 from sklearn.linear_model import Perceptron
+from sklearn.preprocessing import LabelEncoder
+from sklearn.ensemble import RandomForestClassifier
 
-one_hot_cols =  ['0', '5', '7',
+multi_category_columns =  ['0', '5', '7',
         '8', '9', '14',
         '16', '17', '18',
         '20', '23', '25',
         '26', '56', '57',
         '58']
+
+
+def random_forest(train, test, n_estimators=160, n_jobs=3):
+    train_length = len(train)
+    train_feature = train.ix[:, train.columns != 'label']
+    label = train['label']
+    mega = pd.concat([train_feature, test]).apply(LabelEncoder().fit_transform)
+    labelled_train_feature = mega[0:train_length]
+    labelled_test = mega[train_length:]
+    clf = RandomForestClassifier(n_estimators=n_estimators, n_jobs=n_jobs, verbose=True)
+    clf.fit(X=labelled_train_feature, y=label)
+    return clf.predict(labelled_test)
+
 
 def perceptron_from_nothing():
     df = pd.read_csv('original-data.csv')
@@ -15,7 +30,7 @@ def perceptron_from_nothing():
     jammed = [df, quiz]
     mega = pd.concat(jammed)
     print('Getting dummies')
-    full = pd.get_dummies(mega, columns=one_hot_cols)
+    full = pd.get_dummies(mega, columns=multi_category_columns)
     len = 126837
     print('Sectioning array')
     top = full[0:len]
