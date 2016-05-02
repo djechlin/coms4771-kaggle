@@ -3,13 +3,57 @@ import pandas as pd
 from sklearn.linear_model import Perceptron
 from sklearn.preprocessing import LabelEncoder
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.cross_validation import cross_val_score
+from sklearn.ensemble import AdaBoostClassifier
+import time
 
-multi_category_columns =  ['0', '5', '7',
+multi_category_columns = ['0', '5', '7',
         '8', '9', '14',
         '16', '17', '18',
         '20', '23', '25',
         '26', '56', '57',
         '58']
+
+
+def adaboost_forest(train, test):
+    print("Start")
+    train_length = len(train)
+    train_feature = train.ix[:, train.columns != 'label']
+    label = train['label']
+    mega = pd.concat([train_feature, test]).apply(LabelEncoder().fit_transform)
+    labelled_train_feature = mega[0:train_length]
+    labelled_test = mega[train_length:]
+
+    forest_clf = RandomForestClassifier(n_jobs=4, n_estimators=80)
+    adaboost_clf = AdaBoostClassifier(base_estimator=forest_clf, n_estimators=4)
+    print("Fitting")
+    adaboost_clf.fit(X=labelled_train_feature, y=label)
+    print("Predicting")
+    return adaboost_clf.predict(labelled_test)
+
+
+def cross_validate_adaboost_on_forest(train):
+
+    predictions = []
+
+    train_feature = train.ix[:, train.columns != 'label']
+    label = train['label']
+    labelled_train = train_feature.apply(LabelEncoder().fit_transform)
+    labelled_train_feature = labelled_train.ix[:, labelled_train.columns != 'label']
+    adaboost_parameters = [8, 16, 32]
+    forest_parameters = [40, 80, 160, 320, 640]
+
+    start_time = time.time()
+    print('AdaboostParam,ForestParam,Mean,Std,ElapsedSeconds')
+    for adaboost_parameter in adaboost_parameters:
+        for forest_parameter in forest_parameters:
+            forest_clf = RandomForestClassifier(n_estimators=forest_parameter, n_jobs=4, )
+            adaboost_clf = AdaBoostClassifier(base_estimator=forest_clf, n_estimators=adaboost_parameter)
+            prediction = cross_val_score(adaboost_clf, X=labelled_train_feature, y=label, cv=5)
+            predictions.append(prediction)
+            print("%d,%d,%.6f,%.6f,%.1f" %
+                  (adaboost_parameter, forest_parameter, prediction.mean(), prediction.std(), time.time() - start_time))
+    return predictions
 
 
 def random_forest(train, test, n_estimators=160, n_jobs=3):
