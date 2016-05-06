@@ -24,7 +24,7 @@ def adaboost_forest(train, test):
     labelled_train_feature = mega[0:train_length]
     labelled_test = mega[train_length:]
 
-    forest_clf = RandomForestClassifier(n_jobs=4, n_estimators=70)
+    forest_clf = RandomForestClassifier(n_jobs=10, n_estimators=80, max_features=12, criterion='entropy')
     adaboost_clf = AdaBoostClassifier(base_estimator=forest_clf, n_estimators=3)
     print("Fitting")
     adaboost_clf.fit(X=labelled_train_feature, y=label)
@@ -40,18 +40,18 @@ def cross_validate_adaboost_on_forest(train):
     label = train['label']
     labelled_train = train_feature.apply(LabelEncoder().fit_transform)
     labelled_train_feature = labelled_train.ix[:, labelled_train.columns != 'label']
-    adaboost_parameters = [3,4]
-    forest_parameters = [65,70,75,80]
-    criteria = ['gini']
-    max_features = [30, None]
+    adaboost_parameters = [3]
+    forest_parameters = [85,90,95,100]
+    criteria = ['gini', 'entropy']
+    max_features = [20,25]
 
     start_time = time.time()
     print('MaxFeature,Criterion,AdaboostParam,ForestParam,Mean,Std,ElapsedSeconds')
-    for max_feature in max_features:
+    for adaboost_parameter in adaboost_parameters:
         for criterion in criteria:
-            for adaboost_parameter in adaboost_parameters:
+            for max_feature in max_features:
                 for forest_parameter in forest_parameters:
-                    forest_clf = RandomForestClassifier(n_estimators=forest_parameter, n_jobs=4, max_features=max_feature, criterion=criterion)
+                    forest_clf = RandomForestClassifier(n_estimators=forest_parameter, n_jobs=10, max_features=max_feature, criterion=criterion)
                     adaboost_clf = AdaBoostClassifier(base_estimator=forest_clf, n_estimators=adaboost_parameter)
                     prediction = cross_val_score(adaboost_clf, X=labelled_train_feature, y=label, cv=10)
                     predictions.append(prediction)
@@ -72,13 +72,9 @@ def random_forest(train, test, n_estimators=160, n_jobs=3):
     return clf.predict(labelled_test)
 
 
-def perceptron_from_nothing():
-    df = pd.read_csv('original-data.csv')
-    quiz = pd.read_csv('quiz.csv')
-    jammed = [df, quiz]
-    mega = pd.concat(jammed)
+def perceptron_from_nothing(df, quiz):
     print('Getting dummies')
-    full = pd.get_dummies(mega, columns=multi_category_columns)
+    full = pd.get_dummies(pd.concat([df, quiz]), columns=multi_category_columns)
     len = 126837
     print('Sectioning array')
     top = full[0:len]
