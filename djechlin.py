@@ -43,7 +43,7 @@ def cross_validate_adaboost_on_forest(train):
     adaboost_parameters = [3,4]
     forest_parameters = [65,70,75,80]
     criteria = ['gini']
-    max_features = ['auto']
+    max_features = [30, None]
 
     start_time = time.time()
     print('MaxFeature,Criterion,AdaboostParam,ForestParam,Mean,Std,ElapsedSeconds')
