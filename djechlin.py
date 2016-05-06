@@ -24,8 +24,8 @@ def adaboost_forest(train, test):
     labelled_train_feature = mega[0:train_length]
     labelled_test = mega[train_length:]
 
-    forest_clf = RandomForestClassifier(n_jobs=4, n_estimators=80)
-    adaboost_clf = AdaBoostClassifier(base_estimator=forest_clf, n_estimators=4)
+    forest_clf = RandomForestClassifier(n_jobs=4, n_estimators=70)
+    adaboost_clf = AdaBoostClassifier(base_estimator=forest_clf, n_estimators=3)
     print("Fitting")
     adaboost_clf.fit(X=labelled_train_feature, y=label)
     print("Predicting")
@@ -40,19 +40,23 @@ def cross_validate_adaboost_on_forest(train):
     label = train['label']
     labelled_train = train_feature.apply(LabelEncoder().fit_transform)
     labelled_train_feature = labelled_train.ix[:, labelled_train.columns != 'label']
-    adaboost_parameters = [8, 16, 32]
-    forest_parameters = [40, 80, 160, 320, 640]
+    adaboost_parameters = [3,4]
+    forest_parameters = [65,70,75,80]
+    criteria = ['gini']
+    max_features = ['auto']
 
     start_time = time.time()
-    print('AdaboostParam,ForestParam,Mean,Std,ElapsedSeconds')
-    for adaboost_parameter in adaboost_parameters:
-        for forest_parameter in forest_parameters:
-            forest_clf = RandomForestClassifier(n_estimators=forest_parameter, n_jobs=4, )
-            adaboost_clf = AdaBoostClassifier(base_estimator=forest_clf, n_estimators=adaboost_parameter)
-            prediction = cross_val_score(adaboost_clf, X=labelled_train_feature, y=label, cv=5)
-            predictions.append(prediction)
-            print("%d,%d,%.6f,%.6f,%.1f" %
-                  (adaboost_parameter, forest_parameter, prediction.mean(), prediction.std(), time.time() - start_time))
+    print('MaxFeature,Criterion,AdaboostParam,ForestParam,Mean,Std,ElapsedSeconds')
+    for max_feature in max_features:
+        for criterion in criteria:
+            for adaboost_parameter in adaboost_parameters:
+                for forest_parameter in forest_parameters:
+                    forest_clf = RandomForestClassifier(n_estimators=forest_parameter, n_jobs=4, max_features=max_feature, criterion=criterion)
+                    adaboost_clf = AdaBoostClassifier(base_estimator=forest_clf, n_estimators=adaboost_parameter)
+                    prediction = cross_val_score(adaboost_clf, X=labelled_train_feature, y=label, cv=10)
+                    predictions.append(prediction)
+                    print("%s,%s,%d,%d,%.6f,%.6f,%.1f" %
+                          (max_feature, criterion, adaboost_parameter, forest_parameter, prediction.mean(), prediction.std(), time.time() - start_time))
     return predictions
 
 
